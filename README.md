@@ -48,7 +48,22 @@ chat-app
 - JDK 17+ and Maven 3.9+
 - A running Docker engine for tests and local dev (Testcontainers / `docker compose`)
 
-## Setup & Run
+## Live demo (deployed)
+
+Try the API without running anything locally:
+
+| | |
+|---|---|
+| **Site / app base URL** | https://simple-chat-app-9yg1.onrender.com |
+| **Swagger UI** | https://simple-chat-app-9yg1.onrender.com/swagger-ui.html |
+| **OpenAPI JSON** | https://simple-chat-app-9yg1.onrender.com/v3/api-docs |
+
+> **Cold-start warning:** the demo is hosted on Render's free tier, which sleeps after ~15
+> minutes of inactivity. The first request can take **30–60 seconds** to wake the server —
+> open the base URL or the Swagger UI first, wait for it to load, then try the endpoints.
+> Subsequent calls are fast.
+
+## Setup & Run (local)
 
 ```bash
 # 1. Start Redis
@@ -77,9 +92,8 @@ Once the app is running (above), you have three ways to drive it:
 | `http://localhost:8080/swagger-ui.html` | Interactive Swagger UI — click "Try it out", fill a request, see the response |
 | `http://localhost:8080/v3/api-docs` | The raw OpenAPI JSON spec |
 
-> After a Render deploy the same two URLs are
-> `https://<your-app>.onrender.com/swagger-ui.html` and
-> `https://<your-app>.onrender.com/v3/api-docs`.
+> The deployed instance exposes the same URLs (on a `wss://` / `https://` host) — see
+> **Live demo (deployed)** above.
 
 **2. One-command smoke test** — exercises every endpoint (+ error cases) and real WebSocket fan-out:
 
@@ -135,11 +149,13 @@ in the Render dashboard (New → Blueprint) and fill two env vars for a hosted R
 | `SPRING_DATA_REDIS_PASSWORD` | your Redis password |
 | `SPRING_DATA_REDIS_SSL_ENABLED` | `true` if TLS is on (Upstash) |
 
-Once deployed, the form's two URLs are:
+This instance is deployed at:
 
-- Public API: `https://<your-app>.onrender.com/`
-- Swagger UI: `https://<your-app>.onrender.com/swagger-ui.html`
-- OpenAPI spec: `https://<your-app>.onrender.com/v3/api-docs`
+- **Site**: https://simple-chat-app-9yg1.onrender.com
+- **Swagger UI**: https://simple-chat-app-9yg1.onrender.com/swagger-ui.html
+- **OpenAPI spec**: https://simple-chat-app-9yg1.onrender.com/v3/api-docs
+
+(Free tier sleeps after ~15 min idle — the first request cold-starts in ~30–60 s.)
 
 ## REST API
 
