@@ -34,14 +34,16 @@ below.
 ```
 chat-app
 ├── docker-compose.yml                 # Redis 7 for local dev (AOF on)
+├── Dockerfile + render.yaml           # one-click public deployment (see below)
 ├── pom.xml
 ├── test-api.sh                        # one-command end-to-end smoke test
 ├── postman/chat-app.postman_collection.json  # import into Postman
+├── docs/DESIGN.md                     # full design: structures, flow, error contract
 └── src
     ├── main/java/com/freightfox/chatapp
     │   ├── ChatAppApplication.java
-    │   ├── config/        ChatProperties, RedisConfig, WebSocketConfig
-    │   ├── controller/    ChatRoomController (REST endpoints)
+    │   ├── config/        ChatProperties, OpenApiConfig, RedisConfig, WebSocketConfig
+    │   ├── controller/    ChatRoomController (REST endpoints), RootController (landing)
     │   ├── dto/           records for requests/responses, MessageDto
     │   ├── exception/     ChatException hierarchy + GlobalExceptionHandler
     │   ├── redis/         RedisChatStore (Facade), RedisMessageSubscriber
@@ -50,6 +52,7 @@ chat-app
     └── test/java/com/freightfox/chatapp
         ├── ChatRoomServiceTest        unit
         ├── ChatRoomControllerTest     MockMvc
+        ├── RootControllerTest         MockMvc (landing page)
         └── ChatAppIntegrationTest     Testcontainers + real WebSocket
 ```
 
@@ -101,14 +104,33 @@ commands if you prefer.
 mvn test
 ```
 
-28 tests: 11 service unit tests, 12 controller MockMvc tests, and 5 end-to-end integration tests
-mapped one-to-one to the brief's test cases. The integration suite spins up real Redis with
-Testcontainers and drives real WebSocket clients, asserting on Redis state (room Hash, participant
-Set, message List) as well as HTTP/WS behaviour.
+28 tests: 11 service unit tests, 12 controller MockMvc tests, 5 end-to-end integration tests
+mapped one-to-one to the brief's test cases, and 1 root-landing test. The integration suite spins
+up real Redis with Testcontainers and drives real WebSocket clients, asserting on Redis state
+(room Hash, participant Set, message List) as well as HTTP/WS behaviour.
 
 > **Docker note:** if your daemon enforces a minimum API version (e.g. OrbStack ≥ 1.40) while
 > testcontainers negotiates down to docker-java 1.32, set `docker.api.version` to your daemon's
 > version — the pom already does this via surefire (`<api.version>1.45</api.version>`).
+
+## Public deployment (Render one-click)
+
+The repo ships a `Dockerfile` and a `render.yaml` blueprint. Connect **https://github.com/alivinshiva/simple-chat-app**
+in the Render dashboard (New → Blueprint) and fill two env vars for a hosted Redis (e.g. a free
+[Upstash](https://upstash.com) instance):
+
+| Env var | Value |
+|---------|-------|
+| `REDIS_HOST` | your Redis host (e.g. `your-key.upstash.io`) |
+| `REDIS_PORT` | `6379` (Upstash TLS: `6380`) |
+| `SPRING_DATA_REDIS_PASSWORD` | your Redis password |
+| `SPRING_DATA_REDIS_SSL_ENABLED` | `true` if TLS is on (Upstash) |
+
+Once deployed, the form's two URLs are:
+
+- Public API: `https://<your-app>.onrender.com/`
+- Swagger UI: `https://<your-app>.onrender.com/swagger-ui.html`
+- OpenAPI spec: `https://<your-app>.onrender.com/v3/api-docs`
 
 ## REST API
 

@@ -144,4 +144,21 @@ Made the app trivially testable for an evaluator, per the brief's "Testable by P
   200/200/404/400, 404/200/201) + 3/3 WebSocket checks green, exit code 0. `bash -n` and JSON
   parse both clean.
 
+## Step 12 — Swagger, public-deploy scaffolding, GitHub push
+Readied the repo for the submission form (which requires a GitHub URL, a publicly deployed API URL
+and a Swagger UI URL, and forbids "freightfox" in the repo name):
+
+1. **Swagger/OpenAPI** — `springdoc-openapi-starter-webmvc-ui` + `OpenApiConfig` (title/description/
+   contact). `/swagger-ui.html` and `/v3/api-docs` verified live.
+2. **Landing/health endpoint** — `RootController` returns service navigation JSON at `GET /`
+   (also used as the deployment health check; `RootControllerTest` added).
+3. **Deploy scaffolding** — multi-stage `Dockerfile`, `.dockerignore`, and a `render.yaml`
+   Render blueprint (free plan, env var driven Redis). README "Public deployment" section
+   documents the exact form URLs after deploy.
+4. **Self-contained repo** — `docs/DESIGN.md` copied from the workspace root, own `.gitignore`.
+5. **Push** — fresh repo in `chat-app/`, pushed to **https://github.com/alivinshiva/simple-chat-app**
+   (public, branch `main`).
+- **Verify:** `mvn test` → `Tests run: 29, Failures: 0, Errors: 0`, BUILD SUCCESS; `/` and
+  `/v3/api-docs` return 200 from a packaged jar.
+
 ## Done

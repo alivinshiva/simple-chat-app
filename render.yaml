@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: simple-chat-app
+    runtime: docker
+    repo: https://github.com/alivinshiva/simple-chat-app
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: REDIS_HOST
+        value: replace-with-your-redis-host
+      - key: REDIS_PORT
+        sync: false
+      - key: SPRING_DATA_REDIS_PASSWORD
+        sync: false
+      - key: SPRING_DATA_REDIS_SSL_ENABLED
+        value: "false"
