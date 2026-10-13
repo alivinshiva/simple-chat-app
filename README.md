@@ -1,13 +1,13 @@
 # Simple Chat Application Using Redis
 
-chat service backed by **Redis**. Restart/multi-instance safe — Redis is the durable store, in-memory
-sockets are only the live delivery layer.
+A **Spring Boot 3 REST + WebSocket** chat service backed by **Redis**. Restart/multi-instance
+safe — Redis is the durable store, in-memory sockets are only the live delivery layer.
 
 ## Features
 
 - **REST API** — create room, join room, post message, read message history.
 - **WebSocket** (`/ws/chat`) — join a room, then chat. Messages are broadcast live to everyone in the
-  room (including the sender ). REST posts reach WebSocket listeners instantly and vice
+  room (including the sender). REST posts reach WebSocket listeners instantly and vice
   versa — **one write path** (append to Redis list → pub/sub → fan-out).
 
 ## Tech stack
@@ -66,6 +66,61 @@ export SPRING_DATA_REDIS_HOST=localhost
 export SPRING_DATA_REDIS_PORT=6379
 ```
 
+## How to use the app
+
+Once the app is running (above), you have three ways to drive it:
+
+**1. Swagger UI (recommended for testing)** — opens an interactive console for every endpoint:
+
+| URL | What it gives you |
+|-----|-------------------|
+| `http://localhost:8080/swagger-ui.html` | Interactive Swagger UI — click "Try it out", fill a request, see the response |
+| `http://localhost:8080/v3/api-docs` | The raw OpenAPI JSON spec |
+
+> After a Render deploy the same two URLs are
+> `https://<your-app>.onrender.com/swagger-ui.html` and
+> `https://<your-app>.onrender.com/v3/api-docs`.
+
+**2. One-command smoke test** — exercises every endpoint (+ error cases) and real WebSocket fan-out:
+
+```bash
+./test-api.sh
+```
+
+Prints `PASS`/`FAIL` per check and exits `0` only if everything passes.
+
+**3. Postman collection** — import `postman/chat-app.postman_collection.json`, set `baseUrl`
+(default `http://localhost:8080`), and run the requests in order. Every request's description states
+its expected status (201/200/400/404/409).
+
+Typical flow (also what TC1–TC5 do):
+
+```bash
+# create a room
+curl -X POST http://localhost:8080/api/chatapp/chatrooms -H 'Content-Type: application/json' -d '{"roomName":"general"}'
+# join it
+curl -X POST http://localhost:8080/api/chatapp/chatrooms/general/join -H 'Content-Type: application/json' -d '{"participant":"sandy"}'
+# send a message
+curl -X POST http://localhost:8080/api/chatapp/chatrooms/general/messages -H 'Content-Type: application/json' -d '{"participant":"sandy","message":"hello"}'
+# read history
+curl http://localhost:8080/api/chatapp/chatrooms/general/messages
+```
+
+For the full step-by-step manual walkthrough (including WebSocket via `wscat`), see **`TESTING.md`**.
+
+## Tests
+
+```bash
+mvn test
+```
+
+29 tests: 11 service unit tests, 12 controller MockMvc tests, 1 landing-page test, and 5
+end-to-end integration tests (Testcontainers + real WebSocket clients) mapped one-to-one to the
+brief's test cases.
+
+> **Docker note:** if your daemon enforces a minimum API version (e.g. OrbStack ≥ 1.40) while
+> testcontainers negotiates down to docker-java 1.32, set `docker.api.version` to your daemon's
+> version — the pom already does this via surefire (`<api.version>1.45</api.version>`).
 
 ## Public deployment (Render one-click)
 
