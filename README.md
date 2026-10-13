@@ -1,23 +1,14 @@
 # Simple Chat Application Using Redis
 
-A backend interview-assignment implementation for FreightFox AI: a **Spring Boot 3 REST + WebSocket**
 chat service backed by **Redis**. Restart/multi-instance safe — Redis is the durable store, in-memory
 sockets are only the live delivery layer.
-
-Read `docs/DESIGN.md` for the full design (Redis structures, data flow, error contract, edge cases,
-scaling story) and `BUILD_PLAN.md` for the build log. For copy-paste curl commands covering every
-route and error case, see **`TESTING.md`**. For a one-command smoke test of the whole API (**`./test-api.sh`**)
-or a ready-to-import **Postman collection** (`postman/chat-app.postman_collection.json`), see
-below.
 
 ## Features
 
 - **REST API** — create room, join room, post message, read message history.
 - **WebSocket** (`/ws/chat`) — join a room, then chat. Messages are broadcast live to everyone in the
-  room (including the sender as an echo). REST posts reach WebSocket listeners instantly and vice
+  room (including the sender ). REST posts reach WebSocket listeners instantly and vice
   versa — **one write path** (append to Redis list → pub/sub → fan-out).
-- **RFC 7807 `ProblemDetail`** errors on REST, typed `error` envelopes on WebSocket.
-- Message history is durable in Redis (capped, `messageLogMax`).
 
 ## Tech stack
 
@@ -27,7 +18,6 @@ below.
 | Framework | Spring Boot 3.5 |
 | Data store | Redis 7 (`Hash`/`Set`/`List`/PubSub) |
 | Realtime | Spring WebSocket (`TextWebSocketHandler`) |
-| Tests | JUnit 5, Mockito, MockMvc, Testcontainers (`redis:7-alpine`) |
 
 ## Project layout
 
@@ -36,9 +26,6 @@ chat-app
 ├── docker-compose.yml                 # Redis 7 for local dev (AOF on)
 ├── Dockerfile + render.yaml           # one-click public deployment (see below)
 ├── pom.xml
-├── test-api.sh                        # one-command end-to-end smoke test
-├── postman/chat-app.postman_collection.json  # import into Postman
-├── docs/DESIGN.md                     # full design: structures, flow, error contract
 └── src
     ├── main/java/com/freightfox/chatapp
     │   ├── ChatAppApplication.java
@@ -79,39 +66,6 @@ export SPRING_DATA_REDIS_HOST=localhost
 export SPRING_DATA_REDIS_PORT=6379
 ```
 
-## Quick smoke test (no copy-paste)
-
-With the app running, one command exercises every endpoint and error case plus real WebSocket
-fan-out, and prints `PASS`/`FAIL`:
-
-```bash
-./test-api.sh
-```
-
-It uses its own temporary room, asserts each status code and response body, and cleans up after
-itself (exit code `0` only if every check passes).
-
-## Postman
-
-Import `postman/chat-app.postman_collection.json` (Collection → Import). Each request is pre-filled
-with the correct method, path (uses `{{baseUrl}}`, default `http://localhost:8080`) and body, and
-describes its expected status code (TC1–TC5). The manual `TESTING.md` covers equivalent raw `curl`
-commands if you prefer.
-
-## Tests
-
-```bash
-mvn test
-```
-
-28 tests: 11 service unit tests, 12 controller MockMvc tests, 5 end-to-end integration tests
-mapped one-to-one to the brief's test cases, and 1 root-landing test. The integration suite spins
-up real Redis with Testcontainers and drives real WebSocket clients, asserting on Redis state
-(room Hash, participant Set, message List) as well as HTTP/WS behaviour.
-
-> **Docker note:** if your daemon enforces a minimum API version (e.g. OrbStack ≥ 1.40) while
-> testcontainers negotiates down to docker-java 1.32, set `docker.api.version` to your daemon's
-> version — the pom already does this via surefire (`<api.version>1.45</api.version>`).
 
 ## Public deployment (Render one-click)
 
@@ -223,50 +177,6 @@ Removes the room's Redis Hash, Set and List keys; the name can then be reused.
 { "message": "Chat room 'general' deleted successfully.", "status": "success" }
 ```
 
-### Postman walkthrough
-
-1. `POST http://localhost:8080/api/chatapp/chatrooms` with `{"roomName":"general"}` → 201.
-2. `POST http://localhost:8080/api/chatapp/chatrooms/general/messages` with
-   `{"participant":"sandy","message":"hi from postman"}` → 200.
-3. `GET http://localhost:8080/api/chatapp/chatrooms/general/messages` → the message appears.
-4. Do the same with a second participant to build a conversation.
-5. `DELETE http://localhost:8080/api/chatapp/chatrooms/general` → 200, then step 3 returns 404.
-
-## WebSocket
-
-Endpoint: `ws://localhost:8080/ws/chat`
-
-Envelope format (same as the reference `broadcast-be` client):
-
-```json
-{ "type": "join", "payload": { "roomId": "general", "participant": "alice" } }
-{ "type": "chat", "payload": { "participant": "alice", "message": "hello" } }
-```
-
-Server frames:
-
-| Type | When | Payload |
-|------|------|---------|
-| `joined` | successful join | `{ "roomId", "participant" }` |
-| `message` | every message in your room (own echo included) | `{ "participant", "message", "timestamp" }` |
-| `error` | any failure | `{ "code", "message" }` |
-
-Error codes: `INVALID_JSON` (malformed envelope / missing `type`), `UNKNOWN_TYPE`,
-`INVALID_PAYLOAD` (missing `roomId` on join or blank message on chat), `NOT_IN_ROOM` (chat before
-join), `ROOM_NOT_FOUND` (join a room that does not exist).
-
-### WebSocket client example (`wscat`)
-
-```bash
-npm install -g wscat
-wscat -c ws://localhost:8080/ws/chat
-
-# in the terminal:
-{"type":"join","payload":{"roomId":"general","participant":"alice"}}
-{"type":"chat","payload":{"participant":"alice","message":"hello"}}
-```
-
-Open a second `wscat` to the same room to watch messages fan out to you live.
 
 ## How the realtime flow works
 

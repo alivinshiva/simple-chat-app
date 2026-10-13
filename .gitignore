@@ -1,2 +1,4 @@
 target/
 .DS_Store
+BUILD_PLAN.md
+docs/
