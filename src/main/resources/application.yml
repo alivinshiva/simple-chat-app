@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: chat-app
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+
+app:
+  chat:
+    ws-endpoint: /ws/chat
+    history-default-limit: 10
+    history-max-limit: 100
+    message-log-max: 500

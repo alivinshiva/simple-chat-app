@@ -1,0 +1,292 @@
+{
+  "info": {
+    "_postman_id": "d4b8f2a7-6c31-47e5-9d24-aa8b21f7e5c8",
+    "name": "FreightFox Chat App",
+    "description": "Simple Chat Application using Redis - REST API (TC1-TC5). Set baseUrl to the running app (default http://localhost:8080). Each request's description states the expected status.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Room",
+      "item": [
+        {
+          "name": "Create 'general'",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"roomName\": \"general\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms"]
+            },
+            "description": "Expected: 201 Created - { \"message\": \"Chat room 'general' created successfully.\", \"roomId\": \"general\", \"status\": \"success\" }"
+          }
+        },
+        {
+          "name": "Create duplicate (Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"roomName\": \"general\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms"]
+            },
+            "description": "Run after 'Create general'. Expected: 409 Conflict - Chat room 'general' already exists."
+          }
+        },
+        {
+          "name": "Create blank name (Bad Request)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"roomName\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms"]
+            },
+            "description": "Expected: 400 Bad Request - roomName: roomName must not be blank."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Join Room",
+      "item": [
+        {
+          "name": "Join 'general' as alice",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"alice\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "join"]
+            },
+            "description": "Expected: 200 OK - User 'alice' joined chat room 'general'."
+          }
+        },
+        {
+          "name": "Join missing room (Not Found)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"alice\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/ghost/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "ghost", "join"]
+            },
+            "description": "Expected: 404 Not Found - Chat room 'ghost' does not exist."
+          }
+        },
+        {
+          "name": "Join with blank participant (Bad Request)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "join"]
+            },
+            "description": "Expected: 400 Bad Request - participant: participant must not be blank."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Send Message",
+      "item": [
+        {
+          "name": "Send message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"alice\",\n    \"message\": \"Hello, everyone!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "messages"]
+            },
+            "description": "Expected: 200 OK - Message sent successfully. Also published over WebSocket to connected clients."
+          }
+        },
+        {
+          "name": "Send to missing room (Not Found)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"alice\",\n    \"message\": \"hi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/ghost/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "ghost", "messages"]
+            },
+            "description": "Expected: 404 Not Found - Chat room 'ghost' does not exist."
+          }
+        },
+        {
+          "name": "Blank message (Bad Request)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"participant\": \"alice\",\n    \"message\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "messages"]
+            },
+            "description": "Expected: 400 Bad Request - message: message must not be blank."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Message History",
+      "item": [
+        {
+          "name": "History of 'general'",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "messages"]
+            },
+            "description": "Expected: 200 OK - { \"messages\": [...] } newest first."
+          }
+        },
+        {
+          "name": "History with limit=2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/messages?limit=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "messages"],
+              "query": [{ "key": "limit", "value": "2" }]
+            },
+            "description": "Expected: 200 OK - at most 2 messages returned."
+          }
+        },
+        {
+          "name": "History of missing room (Not Found)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/ghost/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "ghost", "messages"]
+            },
+            "description": "Expected: 404 Not Found - Chat room 'ghost' does not exist."
+          }
+        },
+        {
+          "name": "limit=0 (Bad Request)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general/messages?limit=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general", "messages"],
+              "query": [{ "key": "limit", "value": "0" }]
+            },
+            "description": "Expected: 400 Bad Request - limit must be a positive integer."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Delete Room (TC5)",
+      "item": [
+        {
+          "name": "Delete missing room (Not Found)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/ghost",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "ghost"]
+            },
+            "description": "Expected: 404 Not Found - Chat room 'ghost' does not exist."
+          }
+        },
+        {
+          "name": "Delete 'general'",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chatapp/chatrooms/general",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chatapp", "chatrooms", "general"]
+            },
+            "description": "Expected: 200 OK - Chat room 'general' deleted successfully. After this, re-run 'Create general' to get 201 again."
+          }
+        }
+      ]
+    }
+  ]
+}
